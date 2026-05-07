@@ -45,9 +45,6 @@
     <ClInclude Include="Shader_light.h">
       <Filter>Archivos de encabezado</Filter>
     </ClInclude>
-    <ClInclude Include="Shader_m.h">
-      <Filter>Archivos de encabezado</Filter>
-    </ClInclude>
     <ClInclude Include="Skybox.h">
       <Filter>Archivos de encabezado</Filter>
     </ClInclude>
@@ -77,9 +74,6 @@
     <ClCompile Include="DirectionalLight.cpp">
       <Filter>Archivos de origen</Filter>
     </ClCompile>
-    <ClCompile Include="E8-320069688.cpp">
-      <Filter>Archivos de origen</Filter>
-    </ClCompile>
     <ClCompile Include="Light.cpp">
       <Filter>Archivos de origen</Filter>
     </ClCompile>
@@ -98,16 +92,7 @@
     <ClCompile Include="PointLight.cpp">
       <Filter>Archivos de origen</Filter>
     </ClCompile>
-    <ClCompile Include="practica6.cpp">
-      <Filter>Archivos de origen</Filter>
-    </ClCompile>
-    <ClCompile Include="practica7.cpp">
-      <Filter>Archivos de origen</Filter>
-    </ClCompile>
     <ClCompile Include="Shader_light.cpp">
-      <Filter>Archivos de origen</Filter>
-    </ClCompile>
-    <ClCompile Include="Shader_m.cpp">
       <Filter>Archivos de origen</Filter>
     </ClCompile>
     <ClCompile Include="Skybox.cpp">
