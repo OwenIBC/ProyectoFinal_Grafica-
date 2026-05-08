@@ -1,5 +1,5 @@
 /*
-Proyecto Final - Base Limpia con Avatar (Sephiroth)
+Proyecto Final - Base Limpia con Avatar y Ciclo Día/Noche
 */
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -42,21 +42,39 @@ Camera camera;
 bool isThirdPerson = true;
 bool vKeyPressed = false;
 
-// Variables de Sephiroth (Avatar)
+// --- VARIABLES CÁMARA AÉREA ---
+bool isAerialView = false;
+bool bKeyPressed = false;
+glm::vec3 aerialPosition = glm::vec3(0.0f, 80.0f, 0.0f);
+float aerialSpeed = 0.5f;
+// --------------------------------------
+
+// Variables del Avatar
 Model Sephi_M;
-glm::vec3 sephiPosition = glm::vec3(0.0f, -2.0f, 0.0f); // -2.0f porque ahí está tu piso
-float sephiRotationY = 180.0f; // Mirando hacia enfrente (-Z)
-float moveSpeed = 5.0f;
+glm::vec3 sephiPosition = glm::vec3(0.0f, -2.0f, 0.0f);
+float sephiRotationY = 180.0f;
+float moveSpeed = 0.5f;
+
+// --- AJUSTES VISUALES ---
+float sephiScale = 2.0f;
+float sephiYOffset = 0.6f;
+// ------------------------
 
 // Físicas del salto
 float gravity = -9.8f;
 float jumpPower = 5.0f;
 float sephiVelocityY = 0.0f;
 bool isJumping = false;
-float floorLevel = -2.0f; // Nivel del suelo
+float floorLevel = -2.0f;
+
+// --- VARIABLES CICLO DÍA/NOCHE ---
+Skybox skyDay;
+Skybox skyNight;
+float dayNightTimer = 0.0f;
+const float cycleDuration = 7200.0f; // 2 minutos
+// ---------------------------------
 
 Texture pisoTexture;
-Skybox skybox;
 
 Material Material_brillante;
 Material Material_opaco;
@@ -88,7 +106,7 @@ void CreateObjects()
 
 	Mesh* objPiso = new Mesh();
 	objPiso->CreateMesh(floorVertices, floorIndices, 32, 6);
-	meshList.push_back(objPiso); // meshList[0] será el piso
+	meshList.push_back(objPiso);
 }
 
 void CreateShaders()
@@ -106,40 +124,45 @@ int main()
 	CreateObjects();
 	CreateShaders();
 
-	// Texturas
 	pisoTexture = Texture("Textures/piso.tga");
 	pisoTexture.LoadTextureA();
 
-	// Cargar Avatar
 	Sephi_M = Model();
-	Sephi_M.LoadModel("Models/Sephi.fbx"); // Asegúrate de tenerlo en esta ruta
+	Sephi_M.LoadModel("Models/Estatua.fbx"); //MODIFICADO PARA ESTATUA 
 
-	// Skybox
-	std::vector<std::string> skyboxFaces;
-	skyboxFaces.push_back("Textures/Skybox/cupertin-lake_rt.tga");
-	skyboxFaces.push_back("Textures/Skybox/cupertin-lake_lf.tga");
-	skyboxFaces.push_back("Textures/Skybox/cupertin-lake_dn.tga");
-	skyboxFaces.push_back("Textures/Skybox/cupertin-lake_up.tga");
-	skyboxFaces.push_back("Textures/Skybox/cupertin-lake_bk.tga");
-	skyboxFaces.push_back("Textures/Skybox/cupertin-lake_ft.tga");
-	skybox = Skybox(skyboxFaces);
+	// --- CARGAR SKYBOX DE DÍA ---
+	std::vector<std::string> dayFaces;
+	dayFaces.push_back("Textures/Skybox/day_rt.tga");
+	dayFaces.push_back("Textures/Skybox/day_lf.tga");
+	dayFaces.push_back("Textures/Skybox/day_dn.tga");
+	dayFaces.push_back("Textures/Skybox/day_up.tga");
+	dayFaces.push_back("Textures/Skybox/day_bk.tga");
+	dayFaces.push_back("Textures/Skybox/day_ft.tga");
+	skyDay = Skybox(dayFaces);
+
+	// --- CARGAR SKYBOX DE NOCHE ---
+	std::vector<std::string> nightFaces;
+	nightFaces.push_back("Textures/Skybox/ngt_rt.tga");
+	nightFaces.push_back("Textures/Skybox/ngt_lf.tga");
+	nightFaces.push_back("Textures/Skybox/ngt_dn.tga");
+	nightFaces.push_back("Textures/Skybox/ngt_up.tga");
+	nightFaces.push_back("Textures/Skybox/ngt_bk.tga");
+	nightFaces.push_back("Textures/Skybox/ngt_ft.tga");
+	skyNight = Skybox(nightFaces);
 
 	Material_brillante = Material(4.0f, 256);
 	Material_opaco = Material(0.3f, 4);
 
-	mainLight = DirectionalLight(1.0f, 1.0f, 1.0f, 0.5f, 0.5f, 0.0f, -1.0f, -1.0f);
-
 	unsigned int pointLightCount = 0;
-	// Puedes agregar tus pointlights aquí después
 
-	unsigned int spotLightCount = 0;
-	// Puedes agregar tus spotlights aquí después
+	// Activamos los 2 Spotlights que solicitaste
+	unsigned int spotLightCount = 2;
 
 	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, uniformEyePosition = 0,
 		uniformSpecularIntensity = 0, uniformShininess = 0, uniformTextureOffset = 0;
 	GLuint uniformColor = 0;
 
-	glm::mat4 projection = glm::perspective(45.0f, (GLfloat)mainWindow.getBufferWidth() / mainWindow.getBufferHeight(), 0.1f, 1000.0f);
+	glm::mat4 projection = glm::perspective(60.0f * toRadians, (GLfloat)mainWindow.getBufferWidth() / mainWindow.getBufferHeight(), 0.1f, 1000.0f);
 
 	glm::mat4 model(1.0);
 	glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -155,13 +178,56 @@ int main()
 		glfwPollEvents();
 
 		// ---------------------------------------------------------
-		// 1. INPUT DEL USUARIO (AVATAR)
+		// LÓGICA DE TIEMPO: CICLO DÍA / NOCHE SUAVE
+		// ---------------------------------------------------------
+		dayNightTimer += deltaTime;
+		if (dayNightTimer > cycleDuration) {
+			dayNightTimer -= cycleDuration; // Reiniciar ciclo tras 2 minutos
+		}
+
+		// Cálculo matemático para transición suave (0.0 = Día, 1.0 = Noche)
+		float cycleRadians = (dayNightTimer / cycleDuration) * glm::pi<float>() * 2.0f;
+		float blend = (cos(cycleRadians) * -0.5f) + 0.5f;
+
+		// Intensidades calculadas para ser "no muy fuertes"
+		float dayIntensity = 0.4f * (1.0f - blend); // Baja a 0 suavemente
+		float nightIntensity = 0.2f * blend;        // Sube a 0.2 suavemente
+
+		// LUZ DIRECCIONAL GLOBAL (Acompaña la transición)
+		mainLight = DirectionalLight(
+			1.0f * (1.0f - blend) + 0.2f * blend, // Color R
+			1.0f * (1.0f - blend) + 0.2f * blend, // Color G
+			0.9f * (1.0f - blend) + 0.5f * blend, // Color B
+			0.4f * (1.0f - blend) + 0.1f * blend, // Intensidad Ambiental
+			0.5f * (1.0f - blend) + 0.1f * blend, // Intensidad Difusa
+			0.0f, -1.0f, 1.0f * (1.0f - blend) + -1.0f * blend // Dirección de Front a Back
+		);
+
+		// SPOTLIGHT 1: SOL (DÍA) - No muy fuerte, por el lado de day_ft (+Z)
+		spotLights[0] = SpotLight(
+			1.0f, 0.95f, 0.8f, // Color blanco cálido
+			0.0f, dayIntensity, // Intensidad difusa dinámica
+			0.0f, 30.0f, 30.0f, // Posición (Arriba y al Frente)
+			0.0f, -1.0f, -1.0f, // Dirección hacia el origen
+			1.0f, 0.0f, 0.0f, 30.0f // Parámetros físicos de la luz y apertura
+		);
+
+		// SPOTLIGHT 2: LUNA (NOCHE) - Más tenue, tono azul claro, por el lado ngt_bk (-Z)
+		spotLights[1] = SpotLight(
+			0.4f, 0.6f, 1.0f, // Color azul claro
+			0.0f, nightIntensity, // Intensidad difusa dinámica
+			0.0f, 30.0f, -30.0f, // Posición (Arriba y Atrás)
+			0.0f, -1.0f, 1.0f, // Dirección hacia el origen
+			1.0f, 0.0f, 0.0f, 30.0f // Parámetros físicos de la luz y apertura
+		);
 		// ---------------------------------------------------------
 
-		// Cambio de cámara (Tecla V)
+
+		// --- TOGGLE CÁMARA 1RA / 3RA (Tecla V) ---
 		if (mainWindow.getsKeys()[GLFW_KEY_V]) {
 			if (!vKeyPressed) {
 				isThirdPerson = !isThirdPerson;
+				isAerialView = false;
 				vKeyPressed = true;
 			}
 		}
@@ -169,30 +235,48 @@ int main()
 			vKeyPressed = false;
 		}
 
-		// Vector frontal de Sephiroth basado en su rotación en Y
-		glm::vec3 sephiFront(sin(sephiRotationY * toRadians), 0.0f, cos(sephiRotationY * toRadians));
-		glm::vec3 sephiRight = glm::normalize(glm::cross(sephiFront, glm::vec3(0.0f, 1.0f, 0.0f)));
-
-		// Movimiento WASD (Avanza en la dirección a la que mira)
-		if (mainWindow.getsKeys()[GLFW_KEY_W]) sephiPosition += sephiFront * moveSpeed * deltaTime;
-		if (mainWindow.getsKeys()[GLFW_KEY_S]) sephiPosition -= sephiFront * moveSpeed * deltaTime;
-
-		// Rotación lateral (A y D)
-		if (mainWindow.getsKeys()[GLFW_KEY_A]) sephiRotationY += 100.0f * deltaTime;
-		if (mainWindow.getsKeys()[GLFW_KEY_D]) sephiRotationY -= 100.0f * deltaTime;
-
-		// Salto (Barra Espaciadora)
-		if (mainWindow.getsKeys()[GLFW_KEY_SPACE] && !isJumping) {
-			sephiVelocityY = jumpPower;
-			isJumping = true;
+		// --- TOGGLE CÁMARA AÉREA (Tecla B) ---
+		if (mainWindow.getsKeys()[GLFW_KEY_B]) {
+			if (!bKeyPressed) {
+				isAerialView = !isAerialView;
+				if (isAerialView) {
+					aerialPosition.x = sephiPosition.x;
+					aerialPosition.z = sephiPosition.z;
+				}
+				bKeyPressed = true;
+			}
+		}
+		else {
+			bKeyPressed = false;
 		}
 
-		// Lógica de Gravedad
+		// ---------------------------------------------------------
+		// LÓGICA DE MOVIMIENTO
+		// ---------------------------------------------------------
+		if (isAerialView) {
+			if (mainWindow.getsKeys()[GLFW_KEY_W]) aerialPosition.z -= aerialSpeed * deltaTime;
+			if (mainWindow.getsKeys()[GLFW_KEY_S]) aerialPosition.z += aerialSpeed * deltaTime;
+			if (mainWindow.getsKeys()[GLFW_KEY_A]) aerialPosition.x -= aerialSpeed * deltaTime;
+			if (mainWindow.getsKeys()[GLFW_KEY_D]) aerialPosition.x += aerialSpeed * deltaTime;
+		}
+		else {
+			glm::vec3 sephiFront(sin(sephiRotationY * toRadians), 0.0f, cos(sephiRotationY * toRadians));
+
+			if (mainWindow.getsKeys()[GLFW_KEY_W]) sephiPosition += sephiFront * moveSpeed * deltaTime;
+			if (mainWindow.getsKeys()[GLFW_KEY_S]) sephiPosition -= sephiFront * moveSpeed * deltaTime;
+			if (mainWindow.getsKeys()[GLFW_KEY_A]) sephiRotationY += 5.0f * deltaTime;
+			if (mainWindow.getsKeys()[GLFW_KEY_D]) sephiRotationY -= 5.0f * deltaTime;
+
+			if (mainWindow.getsKeys()[GLFW_KEY_SPACE] && !isJumping) {
+				sephiVelocityY = jumpPower;
+				isJumping = true;
+			}
+		}
+
 		if (isJumping) {
 			sephiVelocityY += gravity * deltaTime;
 			sephiPosition.y += sephiVelocityY * deltaTime;
 
-			// Colisión con el piso
 			if (sephiPosition.y <= floorLevel) {
 				sephiPosition.y = floorLevel;
 				isJumping = false;
@@ -201,35 +285,44 @@ int main()
 		}
 
 		// ---------------------------------------------------------
-		// 2. LÓGICA DE LA CÁMARA LIGADA AL AVATAR
+		// LÓGICA DE LA CÁMARA 
 		// ---------------------------------------------------------
 		glm::vec3 cameraPos;
 		glm::vec3 cameraTarget;
+		glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
 
-		if (isThirdPerson) {
-			// Cámara de 3ra Persona: Detrás y un poco arriba de Sephiroth
-			float camDist = 6.0f;
-			float camHeight = 3.0f;
+		if (isAerialView) {
+			cameraPos = aerialPosition;
+			cameraTarget = cameraPos + glm::vec3(0.0f, -1.0f, -0.01f);
+		}
+		else if (isThirdPerson) {
+			float camDist = 5.0f;
+			float camHeight = 2.5f;
+			glm::vec3 sephiFront(sin(sephiRotationY * toRadians), 0.0f, cos(sephiRotationY * toRadians));
 			cameraPos = sephiPosition - (sephiFront * camDist) + glm::vec3(0.0f, camHeight, 0.0f);
-			cameraTarget = sephiPosition + glm::vec3(0.0f, 1.5f, 0.0f); // Mira a la espalda/cabeza
+			cameraTarget = sephiPosition + glm::vec3(0.0f, sephiYOffset + 1.5f, 0.0f);
 		}
 		else {
-			// Cámara de 1ra Persona: En los ojos de Sephiroth
-			// Ajusta el '1.8f' a la altura real de los ojos de tu modelo FBX
-			cameraPos = sephiPosition + glm::vec3(0.0f, 1.8f, 0.0f);
-			cameraTarget = cameraPos + sephiFront; // Mira hacia adelante
+			glm::vec3 sephiFront(sin(sephiRotationY * toRadians), 0.0f, cos(sephiRotationY * toRadians));
+			cameraPos = sephiPosition + glm::vec3(0.0f, sephiYOffset + 2.0f, 0.0f);
+			cameraTarget = cameraPos + sephiFront;
 		}
 
-		// Calculamos la matriz de vista manualmente para anular la clase Camera libre
-		glm::mat4 customViewMatrix = glm::lookAt(cameraPos, cameraTarget, glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 customViewMatrix = glm::lookAt(cameraPos, cameraTarget, upVector);
 
 		// ---------------------------------------------------------
-		// 3. RENDERIZADO
+		// RENDERIZADO
 		// ---------------------------------------------------------
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		skybox.DrawSkybox(customViewMatrix, projection);
+		// Dibujar el Skybox correspondiente según el progreso del blend
+		if (blend < 0.5f) {
+			skyDay.DrawSkybox(customViewMatrix, projection);
+		}
+		else {
+			skyNight.DrawSkybox(customViewMatrix, projection);
+		}
 
 		shaderList[0].UseShader();
 		uniformModel = shaderList[0].GetModelLocation();
@@ -245,6 +338,7 @@ int main()
 		glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(customViewMatrix));
 		glUniform3f(uniformEyePosition, cameraPos.x, cameraPos.y, cameraPos.z);
 
+		// Configuración de las luces dinámicas calculadas arriba
 		shaderList[0].SetDirectionalLight(&mainLight);
 		shaderList[0].SetPointLights(pointLights, pointLightCount);
 		shaderList[0].SetSpotLights(spotLights, spotLightCount);
@@ -260,15 +354,14 @@ int main()
 		Material_opaco.UseMaterial(uniformSpecularIntensity, uniformShininess);
 		meshList[0]->RenderMesh();
 
-		// --- DIBUJAR AVATAR (SEPHIROTH) ---
-		// Solo dibujarlo si estamos en 3ra persona (para que la cámara 1ra persona no se meta en su malla)
-		if (isThirdPerson) {
+		// --- DIBUJAR AVATAR (ESTATUA) ---
+		if (isThirdPerson || isAerialView) {
 			model = glm::mat4(1.0);
-			model = glm::translate(model, sephiPosition);
-			// Rotamos al personaje para que mire a donde debe
+
+			model = glm::translate(model, sephiPosition + glm::vec3(0.0f, sephiYOffset, 0.0f));
 			model = glm::rotate(model, sephiRotationY * toRadians, glm::vec3(0.0f, 1.0f, 0.0f));
-			// Si tu modelo importado es gigante o diminuto, ajusta este scale:
-			model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+			model = glm::rotate(model, -90.0f * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
+			model = glm::scale(model, glm::vec3(sephiScale, sephiScale, sephiScale));
 
 			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 			Sephi_M.RenderModel();
