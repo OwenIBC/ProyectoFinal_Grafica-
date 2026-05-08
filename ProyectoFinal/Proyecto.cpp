@@ -55,6 +55,11 @@ glm::vec3 sephiPosition = glm::vec3(0.0f, -2.0f, 0.0f);
 float sephiRotationY = 180.0f;
 float moveSpeed = 0.5f;
 
+// --- VARIABLES DE LA IGLESIA ---
+Model Iglesia_M;
+Texture iglesiaTexture;
+// -------------------------------
+
 // --- AJUSTES VISUALES ---
 float sephiScale = 2.0f;
 float sephiYOffset = 0.6f;
@@ -73,6 +78,8 @@ Skybox skyNight;
 float dayNightTimer = 0.0f;
 const float cycleDuration = 7200.0f; // 2 minutos
 // ---------------------------------
+
+// sunx
 
 Texture pisoTexture;
 
@@ -130,6 +137,14 @@ int main()
 	Sephi_M = Model();
 	Sephi_M.LoadModel("Models/Estatua.fbx"); //MODIFICADO PARA ESTATUA 
 
+	// --- CARGAR IGLESIA Y TEXTURA ---
+	Iglesia_M = Model();
+	Iglesia_M.LoadModel("Models/Igle.fbx");
+
+	iglesiaTexture = Texture("Textures/aeris-25.png");
+	iglesiaTexture.LoadTextureA(); // Usamos LoadTextureA asumiendo que el PNG tiene canal alfa
+	// --------------------------------
+
 	// --- CARGAR SKYBOX DE DÍA ---
 	std::vector<std::string> dayFaces;
 	dayFaces.push_back("Textures/Skybox/day_rt.tga");
@@ -153,10 +168,9 @@ int main()
 	Material_brillante = Material(4.0f, 256);
 	Material_opaco = Material(0.3f, 4);
 
-	unsigned int pointLightCount = 0;
-
-	// Activamos los 2 Spotlights que solicitaste
-	unsigned int spotLightCount = 2;
+	// Activamos 1 PointLight para el sol y 1 SpotLight para la luna
+	unsigned int pointLightCount = 1;
+	unsigned int spotLightCount = 1;
 
 	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, uniformEyePosition = 0,
 		uniformSpecularIntensity = 0, uniformShininess = 0, uniformTextureOffset = 0;
@@ -198,22 +212,25 @@ int main()
 			1.0f * (1.0f - blend) + 0.2f * blend, // Color R
 			1.0f * (1.0f - blend) + 0.2f * blend, // Color G
 			0.9f * (1.0f - blend) + 0.5f * blend, // Color B
-			0.4f * (1.0f - blend) + 0.1f * blend, // Intensidad Ambiental
+			0.8f * (1.0f - blend) + 0.1f * blend, // Intensidad Ambiental
 			0.5f * (1.0f - blend) + 0.1f * blend, // Intensidad Difusa
 			0.0f, -1.0f, 1.0f * (1.0f - blend) + -1.0f * blend // Dirección de Front a Back
 		);
 
-		// SPOTLIGHT 1: SOL (DÍA) - No muy fuerte, por el lado de day_ft (+Z)
-		spotLights[0] = SpotLight(
+		// POINTLIGHT 1: SOL (DÍA) - Luz puntual que viaja de horizonte a horizonte
+		// Usamos un radio amplio (40.0f) para simular la distancia del arco solar
+		float sunX = sin(cycleRadians) * 400.0f;
+		float sunY = cos(cycleRadians) * 400.0f;
+
+		pointLights[0] = PointLight(
 			1.0f, 0.95f, 0.8f, // Color blanco cálido
-			0.0f, dayIntensity, // Intensidad difusa dinámica
-			0.0f, 30.0f, 30.0f, // Posición (Arriba y al Frente)
-			0.0f, -1.0f, -1.0f, // Dirección hacia el origen
-			1.0f, 0.0f, 0.0f, 30.0f // Parámetros físicos de la luz y apertura
+			0.1f, dayIntensity * 0.7f, // Intensidad difusa dinámica (controlada para no saturar)
+			sunX, sunY, 0.0f, // Posición que forma el arco
+			0.1f, 0.01f, 0.001f // Constante, Lineal, Exponencial (cubre bien pero suave)
 		);
 
-		// SPOTLIGHT 2: LUNA (NOCHE) - Más tenue, tono azul claro, por el lado ngt_bk (-Z)
-		spotLights[1] = SpotLight(
+		// SPOTLIGHT 1: LUNA (NOCHE) - Más tenue, tono azul claro, por el lado ngt_bk (-Z)
+		spotLights[0] = SpotLight(
 			0.4f, 0.6f, 1.0f, // Color azul claro
 			0.0f, nightIntensity, // Intensidad difusa dinámica
 			0.0f, 30.0f, -30.0f, // Posición (Arriba y Atrás)
@@ -353,6 +370,20 @@ int main()
 		pisoTexture.UseTexture();
 		Material_opaco.UseMaterial(uniformSpecularIntensity, uniformShininess);
 		meshList[0]->RenderMesh();
+
+		// --- DIBUJAR IGLESIA ---
+		model = glm::mat4(1.0);
+		// La desplazamos -15 en Z para que se dibuje detrás y no estorbe el movimiento
+		model = glm::translate(model, glm::vec3(0.0f, floorLevel, -15.0f));
+		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+		glUniform3fv(uniformColor, 1, glm::value_ptr(color));
+		glUniform2fv(uniformTextureOffset, 1, glm::value_ptr(toffset));
+
+		iglesiaTexture.UseTexture();
+		Material_opaco.UseMaterial(uniformSpecularIntensity, uniformShininess);
+		Iglesia_M.RenderModel();
+		// -----------------------
 
 		// --- DIBUJAR AVATAR (ESTATUA) ---
 		if (isThirdPerson || isAerialView) {
