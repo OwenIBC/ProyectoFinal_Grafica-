@@ -37,70 +37,96 @@ Window mainWindow;
 std::vector<Mesh*> meshList;
 std::vector<Shader> shaderList;
 
-// Cámaras y controles
+// --- CÁMARAS Y CONTROLES ---
 Camera camera;
 bool isThirdPerson = true;
 bool vKeyPressed = false;
 
-// --- VARIABLES CÁMARA AÉREA ---
 bool isAerialView = false;
 bool bKeyPressed = false;
 glm::vec3 aerialPosition = glm::vec3(0.0f, 200.0f, 0.0f);
 float aerialSpeed = 0.5f;
-// --------------------------------------
 
-// --- VARIABLES DEL AVATAR JERÁRQUICO SIMPLIFICADO ---
+bool isTourCamera = false;
+bool nKeyPressed = false;
+
+// --- VARIABLES DEL AVATAR ---
 Model Sephi_Torso;
-Model Sephi_Bra1, Sephi_Bra2; // 1 Izquierdo, 2 Derecho
-Model Sephi_Pie1, Sephi_Pie2; // 1 Izquierdo, 2 Derecho
+Model Sephi_Bra1, Sephi_Bra2;
+Model Sephi_Pie1, Sephi_Pie2;
 
 glm::vec3 sephiPosition = glm::vec3(0.0f, -1.6f, 0.0f);
-float sephiRotationY = 0.0f; // Mantenemos tu rotación original
+float sephiRotationY = 0.0f;
 float moveSpeed = 0.5f;
 
-// Ángulos de articulación (preparados para animación)
-float angBra1 = 0.0f; // Brazo Izquierdo Completo
-float angBra2 = 0.0f; // Brazo Derecho Completo
-float angPie1 = 0.0f; // Pierna Izquierda Completa
-float angPie2 = 0.0f; // Pierna Derecha Completa
+float angBra1 = 0.0f; float angBra2 = 0.0f;
+float angPie1 = 0.0f; float angPie2 = 0.0f;
 
-// --- OFFSETS PARA ACOMODAR LAS EXTREMIDADES ---
-// BRAZO IZQUIERDO (El de la espada)
-glm::vec3 offHombroIzq = glm::vec3(0.00f, 0.15f, 0.0f);  // Bajamos el brazo (Y de 0.28f a 0.15f)
-// BRAZO DERECHO
-glm::vec3 offHombroDer = glm::vec3(-0.00f, 0.15f, 0.0f); // Bajamos el brazo (Y de 0.28f a 0.15f)
+glm::vec3 offHombroIzq = glm::vec3(0.00f, 0.15f, 0.0f);
+glm::vec3 offHombroDer = glm::vec3(-0.00f, 0.15f, 0.0f);
+glm::vec3 offCaderaIzq = glm::vec3(0.12f, -0.6f, 0.0f);
+glm::vec3 offCaderaDer = glm::vec3(-0.12f, -0.6f, 0.0f);
 
-// PIERNAS
-glm::vec3 offCaderaIzq = glm::vec3(0.12f, -0.6f, 0.0f);  // Distancia del centro del torso a la cadera izq
-glm::vec3 offCaderaDer = glm::vec3(-0.12f, -0.6f, 0.0f); // Distancia del centro del torso a la cadera der
-// ----------------------------------------------
-
-// --- VARIABLES DE LA IGLESIA ---
+// --- VARIABLES DE ESCENARIO Y NUEVOS MODELOS ---
 Model Iglesia_M;
 Texture iglesiaTexture;
-// -------------------------------
 
-// --- AJUSTES VISUALES ---
+Model Tifa_M;
+Model Lamp_M;
+
+float tifaScale = 0.05f;
+float tifaYOffset = 0.0f;
+
+// --- VARIABLES DE LA LOCOMOTORA Y RIELES ---
+Model Loc_M;
+Model Loc_r1, Loc_r2, Loc_r3;
+Model Loc_r4, Loc_r5, Loc_r6;
+Model Loc_p1, Loc_p2;
+Model Riel_M;
+
+float floorLevel = -2.0f;
+
+glm::vec3 locPosition = glm::vec3(50.0f, floorLevel, -15.0f);
+float locScale = 0.5f;
+float rielScale = 0.15f;
+
+float locRotX = -90.0f;
+float locRotY = 0.0f;
+float locRotZ = 0.0f;
+
+glm::vec3 offR1 = glm::vec3(-1.2f, 0.6f, -1.5f);
+glm::vec3 offR2 = glm::vec3(-1.2f, 0.6f, 0.0f);
+glm::vec3 offR3 = glm::vec3(-1.2f, 0.6f, 1.5f);
+glm::vec3 offR4 = glm::vec3(1.2f, 0.6f, -1.5f);
+glm::vec3 offR5 = glm::vec3(1.2f, 0.6f, 0.0f);
+glm::vec3 offR6 = glm::vec3(1.2f, 0.6f, 1.5f);
+glm::vec3 offP1 = glm::vec3(-1.3f, 0.6f, 0.0f);
+glm::vec3 offP2 = glm::vec3(1.3f, 0.6f, 0.0f);
+
+// --- POSICIONES DE LAS LÁMPARAS ---
+glm::vec3 posLamparas[4] = {
+	glm::vec3(-5.0f, floorLevel,  -2.0f),
+	glm::vec3(5.0f, floorLevel,  -2.0f),
+	glm::vec3(-5.0f, floorLevel,   6.0f),
+	glm::vec3(5.0f, floorLevel,   6.0f)
+};
+
+// --- FÍSICAS Y AJUSTES VISUALES ---
 float sephiScale = 3.0f;
 float sephiYOffset = 2.6f;
-// ------------------------
 
-// Físicas del salto
 float gravity = -9.8f;
 float jumpPower = 5.0f;
 float sephiVelocityY = 0.0f;
 bool isJumping = false;
-float floorLevel = -2.0f;
 
 // --- VARIABLES CICLO DÍA/NOCHE ---
 Skybox skyDay;
 Skybox skyNight;
 float dayNightTimer = 0.0f;
-const float cycleDuration = 72000.0f; // 2 minutos
-// ---------------------------------
+const float cycleDuration = 72000.0f;
 
 Texture pisoTexture;
-
 Material Material_brillante;
 Material Material_opaco;
 
@@ -117,16 +143,12 @@ static const char* fShader = "shaders/shader_light.frag";
 
 void CreateObjects()
 {
-	unsigned int floorIndices[] = {
-		0, 2, 1,
-		1, 2, 3
-	};
-
+	unsigned int floorIndices[] = { 0, 2, 1, 1, 2, 3 };
 	GLfloat floorVertices[] = {
-		-20.0f, 0.0f, -20.0f,	0.0f, 0.0f,		0.0f, -1.0f, 0.0f,
-		 20.0f, 0.0f, -20.0f,	20.0f, 0.0f,	0.0f, -1.0f, 0.0f,
-		-20.0f, 0.0f,  20.0f,	0.0f, 20.0f,	0.0f, -1.0f, 0.0f,
-		 20.0f, 0.0f,  20.0f,	20.0f, 20.0f,	0.0f, -1.0f, 0.0f
+		-100.0f, 0.0f, -100.0f,	0.0f, 0.0f,		0.0f, -1.0f, 0.0f,
+		 100.0f, 0.0f, -100.0f,	100.0f, 0.0f,	0.0f, -1.0f, 0.0f,
+		-100.0f, 0.0f,  100.0f,	0.0f, 100.0f,	0.0f, -1.0f, 0.0f,
+		 100.0f, 0.0f,  100.0f,	100.0f, 100.0f,	0.0f, -1.0f, 0.0f
 	};
 
 	Mesh* objPiso = new Mesh();
@@ -149,54 +171,54 @@ int main()
 	CreateObjects();
 	CreateShaders();
 
+	// --- TEXTURA BLANCA BASE ---
+	GLuint texBlanca;
+	glGenTextures(1, &texBlanca);
+	glBindTexture(GL_TEXTURE_2D, texBlanca);
+	unsigned char pixelBlanco[] = { 255, 255, 255, 255 };
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelBlanco);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	// --- CARGA DE TEXTURAS Y MODELOS ---
 	pisoTexture = Texture("Textures/piso.tga");
 	pisoTexture.LoadTextureA();
 
-	// --- CARGAR AVATAR JERÁRQUICO ---
-	Sephi_Torso = Model();
-	Sephi_Torso.LoadModel("Models/Sephi.fbx");
-
+	Sephi_Torso = Model(); Sephi_Torso.LoadModel("Models/Sephi.fbx");
 	Sephi_Bra1 = Model(); Sephi_Bra1.LoadModel("Models/Sephi_bra1.fbx");
 	Sephi_Bra2 = Model(); Sephi_Bra2.LoadModel("Models/Sephi_bra2.fbx");
-
 	Sephi_Pie1 = Model(); Sephi_Pie1.LoadModel("Models/Sephi_pie1.fbx");
 	Sephi_Pie2 = Model(); Sephi_Pie2.LoadModel("Models/Sephi_pie2.fbx");
-	// ------------------------------------------------------------------------
 
-	// --- CARGAR IGLESIA Y TEXTURA ---
-	Iglesia_M = Model();
-	Iglesia_M.LoadModel("Models/Igle.fbx");
-
+	Iglesia_M = Model(); Iglesia_M.LoadModel("Models/Igle.fbx");
 	iglesiaTexture = Texture("Textures/aeris-25.png");
 	iglesiaTexture.LoadTextureA();
-	// --------------------------------
 
-	// --- CARGAR SKYBOX DE DÍA ---
-	std::vector<std::string> dayFaces;
-	dayFaces.push_back("Textures/Skybox/day_rt.tga");
-	dayFaces.push_back("Textures/Skybox/day_lf.tga");
-	dayFaces.push_back("Textures/Skybox/day_dn.tga");
-	dayFaces.push_back("Textures/Skybox/day_up.tga");
-	dayFaces.push_back("Textures/Skybox/day_bk.tga");
-	dayFaces.push_back("Textures/Skybox/day_ft.tga");
+	Tifa_M = Model(); Tifa_M.LoadModel("Models/Tifa.fbx");
+	Lamp_M = Model(); Lamp_M.LoadModel("Models/Lamp.fbx");
+	Riel_M = Model(); Riel_M.LoadModel("Models/riel.fbx");
+
+	Loc_M = Model(); Loc_M.LoadModel("Models/Loc.fbx");
+	Loc_r1 = Model(); Loc_r1.LoadModel("Models/Loc_r1.fbx");
+	Loc_r2 = Model(); Loc_r2.LoadModel("Models/Loc_r2.fbx");
+	Loc_r3 = Model(); Loc_r3.LoadModel("Models/Loc_r3.fbx");
+	Loc_r4 = Model(); Loc_r4.LoadModel("Models/Loc_r4.fbx");
+	Loc_r5 = Model(); Loc_r5.LoadModel("Models/Loc_r5.fbx");
+	Loc_r6 = Model(); Loc_r6.LoadModel("Models/Loc_r6.fbx");
+	Loc_p1 = Model(); Loc_p1.LoadModel("Models/Loc_p1.fbx");
+	Loc_p2 = Model(); Loc_p2.LoadModel("Models/Loc_p2.fbx");
+
+	std::vector<std::string> dayFaces = { "Textures/Skybox/day_rt.tga", "Textures/Skybox/day_lf.tga", "Textures/Skybox/day_dn.tga", "Textures/Skybox/day_up.tga", "Textures/Skybox/day_bk.tga", "Textures/Skybox/day_ft.tga" };
 	skyDay = Skybox(dayFaces);
 
-	// --- CARGAR SKYBOX DE NOCHE ---
-	std::vector<std::string> nightFaces;
-	nightFaces.push_back("Textures/Skybox/ngt_rt.tga");
-	nightFaces.push_back("Textures/Skybox/ngt_lf.tga");
-	nightFaces.push_back("Textures/Skybox/ngt_dn.tga");
-	nightFaces.push_back("Textures/Skybox/ngt_up.tga");
-	nightFaces.push_back("Textures/Skybox/ngt_bk.tga");
-	nightFaces.push_back("Textures/Skybox/ngt_ft.tga");
+	std::vector<std::string> nightFaces = { "Textures/Skybox/ngt_rt.tga", "Textures/Skybox/ngt_lf.tga", "Textures/Skybox/ngt_dn.tga", "Textures/Skybox/ngt_up.tga", "Textures/Skybox/ngt_bk.tga", "Textures/Skybox/ngt_ft.tga" };
 	skyNight = Skybox(nightFaces);
 
 	Material_brillante = Material(4.0f, 256);
 	Material_opaco = Material(0.3f, 4);
 
-	// Activamos 1 PointLight para el sol y 1 SpotLight para la luna
 	unsigned int pointLightCount = 1;
-	unsigned int spotLightCount = 1;
+	unsigned int spotLightCount = 5;
 
 	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, uniformEyePosition = 0,
 		uniformSpecularIntensity = 0, uniformShininess = 0, uniformTextureOffset = 0;
@@ -205,7 +227,7 @@ int main()
 	glm::mat4 projection = glm::perspective(60.0f * toRadians, (GLfloat)mainWindow.getBufferWidth() / mainWindow.getBufferHeight(), 0.1f, 1000.0f);
 
 	glm::mat4 model(1.0);
-	glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
+	glm::vec3 colorBlanco = glm::vec3(1.0f, 1.0f, 1.0f);
 	glm::vec2 toffset = glm::vec2(0.0f, 0.0f);
 
 	while (!mainWindow.getShouldClose())
@@ -217,79 +239,77 @@ int main()
 
 		glfwPollEvents();
 
-		// ---------------------------------------------------------
-		// LÓGICA DE TIEMPO: CICLO DÍA / NOCHE SUAVE
-		// ---------------------------------------------------------
-		dayNightTimer += deltaTime;
-		if (dayNightTimer > cycleDuration) {
-			dayNightTimer -= cycleDuration;
-		}
+		// --- CONTROLES EN TIEMPO REAL ---
+		if (mainWindow.getsKeys()[GLFW_KEY_U]) { locScale += 1.0f * deltaTime; }
+		if (mainWindow.getsKeys()[GLFW_KEY_J]) { locScale -= 1.0f * deltaTime; if (locScale < 0.01f) locScale = 0.01f; }
+		if (mainWindow.getsKeys()[GLFW_KEY_T]) { tifaYOffset += 5.0f * deltaTime; }
+		if (mainWindow.getsKeys()[GLFW_KEY_G]) { tifaYOffset -= 5.0f * deltaTime; }
+		if (mainWindow.getsKeys()[GLFW_KEY_Y]) { tifaScale += 0.5f * deltaTime; }
+		if (mainWindow.getsKeys()[GLFW_KEY_H]) { tifaScale -= 0.5f * deltaTime; if (tifaScale < 0.001f) tifaScale = 0.001f; }
 
-		float cycleRadians = (dayNightTimer / cycleDuration) * glm::pi<float>() * 2.0f;
-		float blend = (cos(cycleRadians) * -0.5f) + 0.5f;
-
-		float dayIntensity = 0.4f * (1.0f - blend);
-		float nightIntensity = 0.2f * blend;
-
-		mainLight = DirectionalLight(
-			1.0f * (1.0f - blend) + 0.2f * blend,
-			1.0f * (1.0f - blend) + 0.2f * blend,
-			0.9f * (1.0f - blend) + 0.5f * blend,
-			0.8f * (1.0f - blend) + 0.1f * blend,
-			0.5f * (1.0f - blend) + 0.1f * blend,
-			0.0f, -1.0f, 1.0f * (1.0f - blend) + -1.0f * blend
-		);
-
-		float sunX = sin(cycleRadians) * 400.0f;
-		float sunY = cos(cycleRadians) * 400.0f;
-
-		pointLights[0] = PointLight(
-			1.0f, 0.95f, 0.8f,
-			0.1f, dayIntensity * 0.7f,
-			sunX, sunY, 0.0f,
-			0.1f, 0.01f, 0.001f
-		);
-
-		spotLights[0] = SpotLight(
-			0.4f, 0.6f, 1.0f,
-			0.0f, nightIntensity,
-			0.0f, 30.0f, -30.0f,
-			0.0f, -1.0f, 1.0f,
-			1.0f, 0.0f, 0.0f, 30.0f
-		);
-		// ---------------------------------------------------------
-
-		// --- TOGGLE CÁMARA 1RA / 3RA (Tecla V) ---
+		// --- SISTEMA DE CÁMARAS (V, B, N) ---
 		if (mainWindow.getsKeys()[GLFW_KEY_V]) {
 			if (!vKeyPressed) {
 				isThirdPerson = !isThirdPerson;
 				isAerialView = false;
+				isTourCamera = false;
 				vKeyPressed = true;
 			}
 		}
-		else {
-			vKeyPressed = false;
-		}
+		else { vKeyPressed = false; }
 
-		// --- TOGGLE CÁMARA AÉREA (Tecla B) ---
 		if (mainWindow.getsKeys()[GLFW_KEY_B]) {
 			if (!bKeyPressed) {
 				isAerialView = !isAerialView;
 				if (isAerialView) {
 					aerialPosition.x = sephiPosition.x;
 					aerialPosition.z = sephiPosition.z;
+					isTourCamera = false;
 				}
 				bKeyPressed = true;
 			}
 		}
-		else {
-			bKeyPressed = false;
+		else { bKeyPressed = false; }
+
+		if (mainWindow.getsKeys()[GLFW_KEY_N]) {
+			if (!nKeyPressed) {
+				isTourCamera = !isTourCamera;
+				if (isTourCamera) {
+					isAerialView = false;
+				}
+				nKeyPressed = true;
+			}
+		}
+		else { nKeyPressed = false; }
+
+		// --- CICLO DÍA/NOCHE ---
+		dayNightTimer += deltaTime;
+		if (dayNightTimer > cycleDuration) dayNightTimer -= cycleDuration;
+		float cycleRadians = (dayNightTimer / cycleDuration) * glm::pi<float>() * 2.0f;
+		float blend = (cos(cycleRadians) * -0.5f) + 0.5f;
+
+		mainLight = DirectionalLight(
+			1.0f * (1.0f - blend) + 0.2f * blend, 1.0f * (1.0f - blend) + 0.2f * blend, 0.9f * (1.0f - blend) + 0.5f * blend,
+			0.8f * (1.0f - blend) + 0.1f * blend, 0.5f * (1.0f - blend) + 0.1f * blend,
+			0.0f, -1.0f, 1.0f * (1.0f - blend) + -1.0f * blend
+		);
+
+		// --- LUNA Y FAROLES ---
+		spotLights[0] = SpotLight(0.4f, 0.6f, 1.0f, 0.0f, 0.2f * blend, 0.0f, 30.0f, -30.0f, 0.0f, -1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 30.0f);
+
+		for (int i = 0; i < 4; i++) {
+			spotLights[i + 1] = SpotLight(
+				1.0f, 1.0f, 0.0f,
+				0.6f, 2.0f,
+				posLamparas[i].x, posLamparas[i].y + 4.5f, posLamparas[i].z,
+				0.0f, -1.0f, 0.0f,
+				1.0f, 0.02f, 0.001f,
+				30.0f
+			);
 		}
 
-		// ---------------------------------------------------------
-		// LÓGICA DE MOVIMIENTO
-		// ---------------------------------------------------------
-		bool estaCaminando = false; // Variable para saber si debemos animar el brazo
+		// --- LÓGICA DE MOVIMIENTO ---
+		bool estaCaminando = false;
 
 		if (isAerialView) {
 			if (mainWindow.getsKeys()[GLFW_KEY_W]) aerialPosition.z -= aerialSpeed * deltaTime;
@@ -297,95 +317,63 @@ int main()
 			if (mainWindow.getsKeys()[GLFW_KEY_A]) aerialPosition.x -= aerialSpeed * deltaTime;
 			if (mainWindow.getsKeys()[GLFW_KEY_D]) aerialPosition.x += aerialSpeed * deltaTime;
 		}
-		else {
+		else if (!isTourCamera) {
 			glm::vec3 sephiFront(sin(sephiRotationY * toRadians), 0.0f, cos(sephiRotationY * toRadians));
-
-			if (mainWindow.getsKeys()[GLFW_KEY_W]) {
-				sephiPosition += sephiFront * moveSpeed * deltaTime;
-				estaCaminando = true;
-			}
-			if (mainWindow.getsKeys()[GLFW_KEY_S]) {
-				sephiPosition -= sephiFront * moveSpeed * deltaTime;
-				estaCaminando = true;
-			}
+			if (mainWindow.getsKeys()[GLFW_KEY_W]) { sephiPosition += sephiFront * moveSpeed * deltaTime; estaCaminando = true; }
+			if (mainWindow.getsKeys()[GLFW_KEY_S]) { sephiPosition -= sephiFront * moveSpeed * deltaTime; estaCaminando = true; }
 			if (mainWindow.getsKeys()[GLFW_KEY_A]) sephiRotationY += 5.0f * deltaTime;
 			if (mainWindow.getsKeys()[GLFW_KEY_D]) sephiRotationY -= 5.0f * deltaTime;
-
-			if (mainWindow.getsKeys()[GLFW_KEY_SPACE] && !isJumping) {
-				sephiVelocityY = jumpPower;
-				isJumping = true;
-			}
+			if (mainWindow.getsKeys()[GLFW_KEY_SPACE] && !isJumping) { sephiVelocityY = jumpPower; isJumping = true; }
 		}
 
 		if (isJumping) {
-			sephiVelocityY += gravity * deltaTime;
-			sephiPosition.y += sephiVelocityY * deltaTime;
-
-			if (sephiPosition.y <= floorLevel) {
-				sephiPosition.y = floorLevel;
-				isJumping = false;
-				sephiVelocityY = 0.0f;
-			}
+			sephiVelocityY += gravity * deltaTime; sephiPosition.y += sephiVelocityY * deltaTime;
+			if (sephiPosition.y <= floorLevel) { sephiPosition.y = floorLevel; isJumping = false; sephiVelocityY = 0.0f; }
 		}
 
-		// --- LÓGICA DE ANIMACIÓN DE CAMINATA ---
 		if (estaCaminando) {
 			float tiempo = glfwGetTime() * 5.0f;
-
-			// Brazo izquierdo (Lo dejamos como lo teníamos)
 			angBra1 = (1.0f - cosf(tiempo)) * 15.0f;
-
-			// Piernas (Seno puro para hacer un péndulo completo de adelante hacia atrás)
-			// Multiplicamos por 25.0f para que el paso se note bien.
-			angPie1 = sinf(tiempo) * 25.0f;   // Pierna Izquierda
-			angPie2 = -sinf(tiempo) * 25.0f;  // Pierna Derecha (El signo '-' hace lo opuesto)
-
+			angPie1 = sinf(tiempo) * 25.0f;
+			angPie2 = -sinf(tiempo) * 25.0f;
 		}
 		else {
-			// Volver a pose de descanso
-			angBra1 = 0.0f;
-			angPie1 = 0.0f;
-			angPie2 = 0.0f;
+			angBra1 = 0.0f; angPie1 = 0.0f; angPie2 = 0.0f;
 		}
 
-		// ---------------------------------------------------------
-		// LÓGICA DE LA CÁMARA 
-		// ---------------------------------------------------------
-		glm::vec3 cameraPos;
-		glm::vec3 cameraTarget;
+		// --- LÓGICA DE POSICIÓN DE CÁMARA ---
+		glm::vec3 cameraPos, cameraTarget;
 		glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
 
-		if (isAerialView) {
-			cameraPos = aerialPosition;
-			cameraTarget = cameraPos + glm::vec3(0.0f, -1.0f, -0.01f);
+		if (isTourCamera) {
+			float tourSpeed = 0.2f;
+			float tourRadius = 35.0f;
+			float timeVal = glfwGetTime() * tourSpeed;
+
+			cameraPos = glm::vec3(sin(timeVal) * tourRadius, 25.0f, cos(timeVal) * tourRadius - 15.0f);
+			cameraTarget = glm::vec3(0.0f, 5.0f, -15.0f);
+		}
+		else if (isAerialView) {
+			cameraPos = aerialPosition; cameraTarget = cameraPos + glm::vec3(0.0f, -1.0f, -0.01f);
 		}
 		else if (isThirdPerson) {
-			float camDist = 5.0f;
-			float camHeight = 5.0f;
 			glm::vec3 sephiFront(sin(sephiRotationY * toRadians), 0.0f, cos(sephiRotationY * toRadians));
-			cameraPos = sephiPosition - (sephiFront * camDist) + glm::vec3(0.0f, camHeight, 0.0f);
+			cameraPos = sephiPosition - (sephiFront * 5.0f) + glm::vec3(0.0f, 5.0f, 0.0f);
 			cameraTarget = sephiPosition + glm::vec3(0.0f, sephiYOffset + 0.6f, 0.0f);
 		}
 		else {
 			glm::vec3 sephiFront(sin(sephiRotationY * toRadians), 0.0f, cos(sephiRotationY * toRadians));
-			cameraPos = sephiPosition + glm::vec3(0.0f, sephiYOffset + 2.0f, 0.0f);
-			cameraTarget = cameraPos + sephiFront;
+			cameraPos = sephiPosition + glm::vec3(0.0f, sephiYOffset + 2.0f, 0.0f); cameraTarget = cameraPos + sephiFront;
 		}
 
 		glm::mat4 customViewMatrix = glm::lookAt(cameraPos, cameraTarget, upVector);
 
-		// ---------------------------------------------------------
-		// RENDERIZADO
-		// ---------------------------------------------------------
+		// --- RENDERIZADO PRINCIPAL ---
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if (blend < 0.5f) {
-			skyDay.DrawSkybox(customViewMatrix, projection);
-		}
-		else {
-			skyNight.DrawSkybox(customViewMatrix, projection);
-		}
+		if (blend < 0.5f) { skyDay.DrawSkybox(customViewMatrix, projection); }
+		else { skyNight.DrawSkybox(customViewMatrix, projection); }
 
 		shaderList[0].UseShader();
 		uniformModel = shaderList[0].GetModelLocation();
@@ -402,85 +390,113 @@ int main()
 		glUniform3f(uniformEyePosition, cameraPos.x, cameraPos.y, cameraPos.z);
 
 		shaderList[0].SetDirectionalLight(&mainLight);
-		shaderList[0].SetPointLights(pointLights, pointLightCount);
 		shaderList[0].SetSpotLights(spotLights, spotLightCount);
+
+		glUniform3fv(uniformColor, 1, glm::value_ptr(colorBlanco));
+		glUniform2fv(uniformTextureOffset, 1, glm::value_ptr(toffset));
 
 		// --- DIBUJAR PISO ---
 		model = glm::mat4(1.0);
 		model = glm::translate(model, glm::vec3(0.0f, floorLevel, 0.0f));
-		model = glm::scale(model, glm::vec3(30.0f, 1.0f, 30.0f));
+		model = glm::scale(model, glm::vec3(100.0f, 1.0f, 100.0f));
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-		glUniform3fv(uniformColor, 1, glm::value_ptr(color));
-		glUniform2fv(uniformTextureOffset, 1, glm::value_ptr(toffset));
 		pisoTexture.UseTexture();
 		Material_opaco.UseMaterial(uniformSpecularIntensity, uniformShininess);
 		meshList[0]->RenderMesh();
 
 		// --- DIBUJAR IGLESIA ---
 		model = glm::mat4(1.0);
-		// AQUÍ SE BAJÓ LA IGLESIA 0.5 UNIDADES EN Y (floorLevel - 0.5f)
 		model = glm::translate(model, glm::vec3(0.0f, floorLevel - 2.6f, -15.0f));
-		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-		glUniform3fv(uniformColor, 1, glm::value_ptr(color));
-		glUniform2fv(uniformTextureOffset, 1, glm::value_ptr(toffset));
-
 		iglesiaTexture.UseTexture();
-		Material_opaco.UseMaterial(uniformSpecularIntensity, uniformShininess);
 		Iglesia_M.RenderModel();
-		// -----------------------
 
-		// --- DIBUJAR AVATAR JERÁRQUICO SIMPLIFICADO ---
-		if (isThirdPerson || isAerialView) {
-
-			// 1. MATRIZ PADRE (TORSO - ARTICULACIÓN CENTRAL)
-			glm::mat4 joint_torso = glm::mat4(1.0f);
-			joint_torso = glm::translate(joint_torso, sephiPosition + glm::vec3(0.0f, sephiYOffset, 0.0f));
+		// --- DIBUJAR AVATAR ---
+		if (isThirdPerson || isAerialView || isTourCamera) {
+			glm::mat4 joint_torso = glm::translate(glm::mat4(1.0f), sephiPosition + glm::vec3(0.0f, sephiYOffset, 0.0f));
 			joint_torso = glm::rotate(joint_torso, sephiRotationY * toRadians, glm::vec3(0.0f, 1.0f, 0.0f));
-
-			// Matriz exclusiva para DIBUJAR el torso
-			glm::mat4 draw_torso = glm::scale(joint_torso, glm::vec3(sephiScale));
-			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(draw_torso));
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(glm::scale(joint_torso, glm::vec3(sephiScale))));
 			Sephi_Torso.RenderModel();
 
-			// --- BRAZO IZQUIERDO (PRUEBA FINAL DE EJE) ---
-			glm::mat4 joint_bra1 = joint_torso;
-			joint_bra1 = glm::translate(joint_bra1, offHombroIzq);
-
-			// PROBEMOS EL EJE Z (0,0,1). 
-			// Si con X aletea, Z TIENE que ser el que lo mueve hacia adelante/atrás.
-			joint_bra1 = glm::rotate(joint_bra1, angBra1 * toRadians, glm::vec3(0.0f, 0.0f, 1.0f));
-
-			glm::mat4 draw_bra1 = glm::scale(joint_bra1, glm::vec3(sephiScale));
-			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(draw_bra1));
+			glm::mat4 joint_bra1 = glm::rotate(glm::translate(joint_torso, offHombroIzq), angBra1 * toRadians, glm::vec3(0.0f, 0.0f, 1.0f));
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(glm::scale(joint_bra1, glm::vec3(sephiScale))));
 			Sephi_Bra1.RenderModel();
 
-			// --- BRAZO DERECHO ---
-			glm::mat4 joint_bra2 = glm::translate(joint_torso, offHombroDer);
-			joint_bra2 = glm::rotate(joint_bra2, angBra2 * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
-
-			glm::mat4 draw_bra2 = glm::scale(joint_bra2, glm::vec3(sephiScale));
-			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(draw_bra2));
+			glm::mat4 joint_bra2 = glm::rotate(glm::translate(joint_torso, offHombroDer), angBra2 * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(glm::scale(joint_bra2, glm::vec3(sephiScale))));
 			Sephi_Bra2.RenderModel();
 
-			// --- PIERNA IZQUIERDA ---
-			glm::mat4 joint_pie1 = glm::translate(joint_torso, offCaderaIzq);
-			// Usamos el Eje Z (0, 0, 1) que es el del balanceo frontal
-			joint_pie1 = glm::rotate(joint_pie1, angPie1 * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
-
-			glm::mat4 draw_pie1 = glm::scale(joint_pie1, glm::vec3(sephiScale));
-			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(draw_pie1));
+			glm::mat4 joint_pie1 = glm::rotate(glm::translate(joint_torso, offCaderaIzq), angPie1 * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(glm::scale(joint_pie1, glm::vec3(sephiScale))));
 			Sephi_Pie1.RenderModel();
 
-			// --- PIERNA DERECHA ---
-			glm::mat4 joint_pie2 = glm::translate(joint_torso, offCaderaDer);
-			// Usamos el Eje Z (0, 0, 1) que es el del balanceo frontal
-			joint_pie2 = glm::rotate(joint_pie2, angPie2 * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
-
-			glm::mat4 draw_pie2 = glm::scale(joint_pie2, glm::vec3(sephiScale));
-			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(draw_pie2));
+			glm::mat4 joint_pie2 = glm::rotate(glm::translate(joint_torso, offCaderaDer), angPie2 * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(glm::scale(joint_pie2, glm::vec3(sephiScale))));
 			Sephi_Pie2.RenderModel();
 		}
+
+		// --- RENDERIZADO CON PARCHE BLANCO ---
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texBlanca);
+		Material_opaco.UseMaterial(uniformSpecularIntensity, uniformShininess);
+
+		// --- DIBUJAR TIFA ---
+		glm::mat4 modelTifa = glm::mat4(1.0f);
+		modelTifa = glm::translate(modelTifa, glm::vec3(0.0f, floorLevel + tifaYOffset, 5.0f));
+		modelTifa = glm::scale(modelTifa, glm::vec3(tifaScale));
+		glUniform3fv(uniformColor, 1, glm::value_ptr(colorBlanco));
+		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(modelTifa));
+		Tifa_M.RenderModel();
+
+		// --- DIBUJAR LAMPARAS ---
+		for (int i = 0; i < 4; i++) {
+			glm::mat4 modelLamp = glm::mat4(1.0f);
+			modelLamp = glm::translate(modelLamp, posLamparas[i]);
+			modelLamp = glm::scale(modelLamp, glm::vec3(1.8f));
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(modelLamp));
+			Lamp_M.RenderModel();
+		}
+
+		// --- DIBUJAR RIELES ---
+		glm::mat4 joint_riel = glm::mat4(1.0f);
+		joint_riel = glm::translate(joint_riel, locPosition);
+		joint_riel = glm::rotate(joint_riel, locRotX * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
+		joint_riel = glm::rotate(joint_riel, locRotY * toRadians, glm::vec3(0.0f, 1.0f, 0.0f));
+		joint_riel = glm::rotate(joint_riel, locRotZ * toRadians, glm::vec3(0.0f, 0.0f, 1.0f));
+		joint_riel = glm::scale(joint_riel, glm::vec3(rielScale));
+		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(joint_riel));
+		Riel_M.RenderModel();
+
+		// --- MATRIZ BASE TREN ---
+		glm::mat4 joint_loc = glm::mat4(1.0f);
+		joint_loc = glm::translate(joint_loc, locPosition);
+		joint_loc = glm::rotate(joint_loc, locRotX * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
+		joint_loc = glm::rotate(joint_loc, locRotY * toRadians, glm::vec3(0.0f, 1.0f, 0.0f));
+		joint_loc = glm::rotate(joint_loc, locRotZ * toRadians, glm::vec3(0.0f, 0.0f, 1.0f));
+		joint_loc = glm::scale(joint_loc, glm::vec3(locScale));
+
+		// --- DIBUJAR LOCOMOTORA ---
+		glm::vec3 colorCuerpo = glm::vec3(0.1f, 0.1f, 0.1f);
+		glUniform3fv(uniformColor, 1, glm::value_ptr(colorCuerpo));
+		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(joint_loc));
+		Loc_M.RenderModel();
+
+		auto DrawStaticPiece = [&](Model& m, glm::vec3 offset) {
+			glm::mat4 joint_piece = glm::translate(joint_loc, offset);
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(joint_piece));
+			m.RenderModel();
+			};
+
+		// Ruedas 
+		glm::vec3 colorAmarilloVerdoso = glm::vec3(0.880f, 0.926f, 0.427f);
+		glUniform3fv(uniformColor, 1, glm::value_ptr(colorAmarilloVerdoso));
+		DrawStaticPiece(Loc_r1, offR1); DrawStaticPiece(Loc_r2, offR2); DrawStaticPiece(Loc_r3, offR3);
+		DrawStaticPiece(Loc_r4, offR4); DrawStaticPiece(Loc_r5, offR5); DrawStaticPiece(Loc_r6, offR6);
+
+		// Palos 
+		glm::vec3 colorGrisClaro = glm::vec3(0.7f, 0.7f, 0.7f);
+		glUniform3fv(uniformColor, 1, glm::value_ptr(colorGrisClaro));
+		DrawStaticPiece(Loc_p1, offP1); DrawStaticPiece(Loc_p2, offP2);
 
 		glUseProgram(0);
 		mainWindow.swapBuffers();
