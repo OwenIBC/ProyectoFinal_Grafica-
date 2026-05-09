@@ -45,15 +45,35 @@ bool vKeyPressed = false;
 // --- VARIABLES CÁMARA AÉREA ---
 bool isAerialView = false;
 bool bKeyPressed = false;
-glm::vec3 aerialPosition = glm::vec3(0.0f, 80.0f, 0.0f);
+glm::vec3 aerialPosition = glm::vec3(0.0f, 200.0f, 0.0f);
 float aerialSpeed = 0.5f;
 // --------------------------------------
 
-// Variables del Avatar
-Model Sephi_M;
-glm::vec3 sephiPosition = glm::vec3(0.0f, -2.0f, 0.0f);
-float sephiRotationY = 180.0f;
+// --- VARIABLES DEL AVATAR JERÁRQUICO SIMPLIFICADO ---
+Model Sephi_Torso;
+Model Sephi_Bra1, Sephi_Bra2; // 1 Izquierdo, 2 Derecho
+Model Sephi_Pie1, Sephi_Pie2; // 1 Izquierdo, 2 Derecho
+
+glm::vec3 sephiPosition = glm::vec3(0.0f, -1.6f, 0.0f);
+float sephiRotationY = 0.0f; // Mantenemos tu rotación original
 float moveSpeed = 0.5f;
+
+// Ángulos de articulación (preparados para animación)
+float angBra1 = 0.0f; // Brazo Izquierdo Completo
+float angBra2 = 0.0f; // Brazo Derecho Completo
+float angPie1 = 0.0f; // Pierna Izquierda Completa
+float angPie2 = 0.0f; // Pierna Derecha Completa
+
+// --- OFFSETS PARA ACOMODAR LAS EXTREMIDADES ---
+// BRAZO IZQUIERDO (El de la espada)
+glm::vec3 offHombroIzq = glm::vec3(0.00f, 0.15f, 0.0f);  // Bajamos el brazo (Y de 0.28f a 0.15f)
+// BRAZO DERECHO
+glm::vec3 offHombroDer = glm::vec3(-0.00f, 0.15f, 0.0f); // Bajamos el brazo (Y de 0.28f a 0.15f)
+
+// PIERNAS
+glm::vec3 offCaderaIzq = glm::vec3(0.12f, -0.6f, 0.0f);  // Distancia del centro del torso a la cadera izq
+glm::vec3 offCaderaDer = glm::vec3(-0.12f, -0.6f, 0.0f); // Distancia del centro del torso a la cadera der
+// ----------------------------------------------
 
 // --- VARIABLES DE LA IGLESIA ---
 Model Iglesia_M;
@@ -61,8 +81,8 @@ Texture iglesiaTexture;
 // -------------------------------
 
 // --- AJUSTES VISUALES ---
-float sephiScale = 2.0f;
-float sephiYOffset = 0.6f;
+float sephiScale = 3.0f;
+float sephiYOffset = 2.6f;
 // ------------------------
 
 // Físicas del salto
@@ -76,10 +96,8 @@ float floorLevel = -2.0f;
 Skybox skyDay;
 Skybox skyNight;
 float dayNightTimer = 0.0f;
-const float cycleDuration = 7200.0f; // 2 minutos
+const float cycleDuration = 72000.0f; // 2 minutos
 // ---------------------------------
-
-// sunx
 
 Texture pisoTexture;
 
@@ -134,15 +152,23 @@ int main()
 	pisoTexture = Texture("Textures/piso.tga");
 	pisoTexture.LoadTextureA();
 
-	Sephi_M = Model();
-	Sephi_M.LoadModel("Models/Estatua.fbx"); //MODIFICADO PARA ESTATUA 
+	// --- CARGAR AVATAR JERÁRQUICO ---
+	Sephi_Torso = Model();
+	Sephi_Torso.LoadModel("Models/Sephi.fbx");
+
+	Sephi_Bra1 = Model(); Sephi_Bra1.LoadModel("Models/Sephi_bra1.fbx");
+	Sephi_Bra2 = Model(); Sephi_Bra2.LoadModel("Models/Sephi_bra2.fbx");
+
+	Sephi_Pie1 = Model(); Sephi_Pie1.LoadModel("Models/Sephi_pie1.fbx");
+	Sephi_Pie2 = Model(); Sephi_Pie2.LoadModel("Models/Sephi_pie2.fbx");
+	// ------------------------------------------------------------------------
 
 	// --- CARGAR IGLESIA Y TEXTURA ---
 	Iglesia_M = Model();
 	Iglesia_M.LoadModel("Models/Igle.fbx");
 
 	iglesiaTexture = Texture("Textures/aeris-25.png");
-	iglesiaTexture.LoadTextureA(); // Usamos LoadTextureA asumiendo que el PNG tiene canal alfa
+	iglesiaTexture.LoadTextureA();
 	// --------------------------------
 
 	// --- CARGAR SKYBOX DE DÍA ---
@@ -196,49 +222,42 @@ int main()
 		// ---------------------------------------------------------
 		dayNightTimer += deltaTime;
 		if (dayNightTimer > cycleDuration) {
-			dayNightTimer -= cycleDuration; // Reiniciar ciclo tras 2 minutos
+			dayNightTimer -= cycleDuration;
 		}
 
-		// Cálculo matemático para transición suave (0.0 = Día, 1.0 = Noche)
 		float cycleRadians = (dayNightTimer / cycleDuration) * glm::pi<float>() * 2.0f;
 		float blend = (cos(cycleRadians) * -0.5f) + 0.5f;
 
-		// Intensidades calculadas para ser "no muy fuertes"
-		float dayIntensity = 0.4f * (1.0f - blend); // Baja a 0 suavemente
-		float nightIntensity = 0.2f * blend;        // Sube a 0.2 suavemente
+		float dayIntensity = 0.4f * (1.0f - blend);
+		float nightIntensity = 0.2f * blend;
 
-		// LUZ DIRECCIONAL GLOBAL (Acompaña la transición)
 		mainLight = DirectionalLight(
-			1.0f * (1.0f - blend) + 0.2f * blend, // Color R
-			1.0f * (1.0f - blend) + 0.2f * blend, // Color G
-			0.9f * (1.0f - blend) + 0.5f * blend, // Color B
-			0.8f * (1.0f - blend) + 0.1f * blend, // Intensidad Ambiental
-			0.5f * (1.0f - blend) + 0.1f * blend, // Intensidad Difusa
-			0.0f, -1.0f, 1.0f * (1.0f - blend) + -1.0f * blend // Dirección de Front a Back
+			1.0f * (1.0f - blend) + 0.2f * blend,
+			1.0f * (1.0f - blend) + 0.2f * blend,
+			0.9f * (1.0f - blend) + 0.5f * blend,
+			0.8f * (1.0f - blend) + 0.1f * blend,
+			0.5f * (1.0f - blend) + 0.1f * blend,
+			0.0f, -1.0f, 1.0f * (1.0f - blend) + -1.0f * blend
 		);
 
-		// POINTLIGHT 1: SOL (DÍA) - Luz puntual que viaja de horizonte a horizonte
-		// Usamos un radio amplio (40.0f) para simular la distancia del arco solar
 		float sunX = sin(cycleRadians) * 400.0f;
 		float sunY = cos(cycleRadians) * 400.0f;
 
 		pointLights[0] = PointLight(
-			1.0f, 0.95f, 0.8f, // Color blanco cálido
-			0.1f, dayIntensity * 0.7f, // Intensidad difusa dinámica (controlada para no saturar)
-			sunX, sunY, 0.0f, // Posición que forma el arco
-			0.1f, 0.01f, 0.001f // Constante, Lineal, Exponencial (cubre bien pero suave)
+			1.0f, 0.95f, 0.8f,
+			0.1f, dayIntensity * 0.7f,
+			sunX, sunY, 0.0f,
+			0.1f, 0.01f, 0.001f
 		);
 
-		// SPOTLIGHT 1: LUNA (NOCHE) - Más tenue, tono azul claro, por el lado ngt_bk (-Z)
 		spotLights[0] = SpotLight(
-			0.4f, 0.6f, 1.0f, // Color azul claro
-			0.0f, nightIntensity, // Intensidad difusa dinámica
-			0.0f, 30.0f, -30.0f, // Posición (Arriba y Atrás)
-			0.0f, -1.0f, 1.0f, // Dirección hacia el origen
-			1.0f, 0.0f, 0.0f, 30.0f // Parámetros físicos de la luz y apertura
+			0.4f, 0.6f, 1.0f,
+			0.0f, nightIntensity,
+			0.0f, 30.0f, -30.0f,
+			0.0f, -1.0f, 1.0f,
+			1.0f, 0.0f, 0.0f, 30.0f
 		);
 		// ---------------------------------------------------------
-
 
 		// --- TOGGLE CÁMARA 1RA / 3RA (Tecla V) ---
 		if (mainWindow.getsKeys()[GLFW_KEY_V]) {
@@ -270,6 +289,8 @@ int main()
 		// ---------------------------------------------------------
 		// LÓGICA DE MOVIMIENTO
 		// ---------------------------------------------------------
+		bool estaCaminando = false; // Variable para saber si debemos animar el brazo
+
 		if (isAerialView) {
 			if (mainWindow.getsKeys()[GLFW_KEY_W]) aerialPosition.z -= aerialSpeed * deltaTime;
 			if (mainWindow.getsKeys()[GLFW_KEY_S]) aerialPosition.z += aerialSpeed * deltaTime;
@@ -279,8 +300,14 @@ int main()
 		else {
 			glm::vec3 sephiFront(sin(sephiRotationY * toRadians), 0.0f, cos(sephiRotationY * toRadians));
 
-			if (mainWindow.getsKeys()[GLFW_KEY_W]) sephiPosition += sephiFront * moveSpeed * deltaTime;
-			if (mainWindow.getsKeys()[GLFW_KEY_S]) sephiPosition -= sephiFront * moveSpeed * deltaTime;
+			if (mainWindow.getsKeys()[GLFW_KEY_W]) {
+				sephiPosition += sephiFront * moveSpeed * deltaTime;
+				estaCaminando = true;
+			}
+			if (mainWindow.getsKeys()[GLFW_KEY_S]) {
+				sephiPosition -= sephiFront * moveSpeed * deltaTime;
+				estaCaminando = true;
+			}
 			if (mainWindow.getsKeys()[GLFW_KEY_A]) sephiRotationY += 5.0f * deltaTime;
 			if (mainWindow.getsKeys()[GLFW_KEY_D]) sephiRotationY -= 5.0f * deltaTime;
 
@@ -301,6 +328,26 @@ int main()
 			}
 		}
 
+		// --- LÓGICA DE ANIMACIÓN DE CAMINATA ---
+		if (estaCaminando) {
+			float tiempo = glfwGetTime() * 5.0f;
+
+			// Brazo izquierdo (Lo dejamos como lo teníamos)
+			angBra1 = (1.0f - cosf(tiempo)) * 15.0f;
+
+			// Piernas (Seno puro para hacer un péndulo completo de adelante hacia atrás)
+			// Multiplicamos por 25.0f para que el paso se note bien.
+			angPie1 = sinf(tiempo) * 25.0f;   // Pierna Izquierda
+			angPie2 = -sinf(tiempo) * 25.0f;  // Pierna Derecha (El signo '-' hace lo opuesto)
+
+		}
+		else {
+			// Volver a pose de descanso
+			angBra1 = 0.0f;
+			angPie1 = 0.0f;
+			angPie2 = 0.0f;
+		}
+
 		// ---------------------------------------------------------
 		// LÓGICA DE LA CÁMARA 
 		// ---------------------------------------------------------
@@ -314,10 +361,10 @@ int main()
 		}
 		else if (isThirdPerson) {
 			float camDist = 5.0f;
-			float camHeight = 2.5f;
+			float camHeight = 5.0f;
 			glm::vec3 sephiFront(sin(sephiRotationY * toRadians), 0.0f, cos(sephiRotationY * toRadians));
 			cameraPos = sephiPosition - (sephiFront * camDist) + glm::vec3(0.0f, camHeight, 0.0f);
-			cameraTarget = sephiPosition + glm::vec3(0.0f, sephiYOffset + 1.5f, 0.0f);
+			cameraTarget = sephiPosition + glm::vec3(0.0f, sephiYOffset + 0.6f, 0.0f);
 		}
 		else {
 			glm::vec3 sephiFront(sin(sephiRotationY * toRadians), 0.0f, cos(sephiRotationY * toRadians));
@@ -333,7 +380,6 @@ int main()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Dibujar el Skybox correspondiente según el progreso del blend
 		if (blend < 0.5f) {
 			skyDay.DrawSkybox(customViewMatrix, projection);
 		}
@@ -355,7 +401,6 @@ int main()
 		glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(customViewMatrix));
 		glUniform3f(uniformEyePosition, cameraPos.x, cameraPos.y, cameraPos.z);
 
-		// Configuración de las luces dinámicas calculadas arriba
 		shaderList[0].SetDirectionalLight(&mainLight);
 		shaderList[0].SetPointLights(pointLights, pointLightCount);
 		shaderList[0].SetSpotLights(spotLights, spotLightCount);
@@ -373,8 +418,8 @@ int main()
 
 		// --- DIBUJAR IGLESIA ---
 		model = glm::mat4(1.0);
-		// La desplazamos -15 en Z para que se dibuje detrás y no estorbe el movimiento
-		model = glm::translate(model, glm::vec3(0.0f, floorLevel, -15.0f));
+		// AQUÍ SE BAJÓ LA IGLESIA 0.5 UNIDADES EN Y (floorLevel - 0.5f)
+		model = glm::translate(model, glm::vec3(0.0f, floorLevel - 2.6f, -15.0f));
 		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 		glUniform3fv(uniformColor, 1, glm::value_ptr(color));
@@ -385,17 +430,56 @@ int main()
 		Iglesia_M.RenderModel();
 		// -----------------------
 
-		// --- DIBUJAR AVATAR (ESTATUA) ---
+		// --- DIBUJAR AVATAR JERÁRQUICO SIMPLIFICADO ---
 		if (isThirdPerson || isAerialView) {
-			model = glm::mat4(1.0);
 
-			model = glm::translate(model, sephiPosition + glm::vec3(0.0f, sephiYOffset, 0.0f));
-			model = glm::rotate(model, sephiRotationY * toRadians, glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::rotate(model, -90.0f * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
-			model = glm::scale(model, glm::vec3(sephiScale, sephiScale, sephiScale));
+			// 1. MATRIZ PADRE (TORSO - ARTICULACIÓN CENTRAL)
+			glm::mat4 joint_torso = glm::mat4(1.0f);
+			joint_torso = glm::translate(joint_torso, sephiPosition + glm::vec3(0.0f, sephiYOffset, 0.0f));
+			joint_torso = glm::rotate(joint_torso, sephiRotationY * toRadians, glm::vec3(0.0f, 1.0f, 0.0f));
 
-			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-			Sephi_M.RenderModel();
+			// Matriz exclusiva para DIBUJAR el torso
+			glm::mat4 draw_torso = glm::scale(joint_torso, glm::vec3(sephiScale));
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(draw_torso));
+			Sephi_Torso.RenderModel();
+
+			// --- BRAZO IZQUIERDO (PRUEBA FINAL DE EJE) ---
+			glm::mat4 joint_bra1 = joint_torso;
+			joint_bra1 = glm::translate(joint_bra1, offHombroIzq);
+
+			// PROBEMOS EL EJE Z (0,0,1). 
+			// Si con X aletea, Z TIENE que ser el que lo mueve hacia adelante/atrás.
+			joint_bra1 = glm::rotate(joint_bra1, angBra1 * toRadians, glm::vec3(0.0f, 0.0f, 1.0f));
+
+			glm::mat4 draw_bra1 = glm::scale(joint_bra1, glm::vec3(sephiScale));
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(draw_bra1));
+			Sephi_Bra1.RenderModel();
+
+			// --- BRAZO DERECHO ---
+			glm::mat4 joint_bra2 = glm::translate(joint_torso, offHombroDer);
+			joint_bra2 = glm::rotate(joint_bra2, angBra2 * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
+
+			glm::mat4 draw_bra2 = glm::scale(joint_bra2, glm::vec3(sephiScale));
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(draw_bra2));
+			Sephi_Bra2.RenderModel();
+
+			// --- PIERNA IZQUIERDA ---
+			glm::mat4 joint_pie1 = glm::translate(joint_torso, offCaderaIzq);
+			// Usamos el Eje Z (0, 0, 1) que es el del balanceo frontal
+			joint_pie1 = glm::rotate(joint_pie1, angPie1 * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
+
+			glm::mat4 draw_pie1 = glm::scale(joint_pie1, glm::vec3(sephiScale));
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(draw_pie1));
+			Sephi_Pie1.RenderModel();
+
+			// --- PIERNA DERECHA ---
+			glm::mat4 joint_pie2 = glm::translate(joint_torso, offCaderaDer);
+			// Usamos el Eje Z (0, 0, 1) que es el del balanceo frontal
+			joint_pie2 = glm::rotate(joint_pie2, angPie2 * toRadians, glm::vec3(1.0f, 0.0f, 0.0f));
+
+			glm::mat4 draw_pie2 = glm::scale(joint_pie2, glm::vec3(sephiScale));
+			glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(draw_pie2));
+			Sephi_Pie2.RenderModel();
 		}
 
 		glUseProgram(0);
